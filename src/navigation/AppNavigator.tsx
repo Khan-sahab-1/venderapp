@@ -1,0 +1,94 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useAuth } from '../context/AuthContext';
+import { LoginScreen } from '../screens/LoginScreen';
+import { DashboardScreen } from '../screens/DashboardScreen';
+import { OrdersListScreen } from '../screens/OrdersListScreen';
+import { OrderDetailScreen } from '../screens/OrderDetailScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
+import { Icon } from '../components/Icon';
+import { colors } from '../theme/colors';
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+const renderDashboardIcon = ({ color }: { color: string }) => (
+  <Icon name="home" size={20} color={color} />
+);
+
+const renderOrdersIcon = ({ color }: { color: string }) => (
+  <Icon name="package" size={20} color={color} />
+);
+
+const renderProfileIcon = ({ color }: { color: string }) => (
+  <Icon name="user" size={20} color={color} />
+);
+
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
+        },
+      }}
+    >
+      <Tab.Screen
+        name="DashboardTab"
+        component={DashboardScreen}
+        options={{
+          tabBarLabel: 'Dashboard',
+          tabBarIcon: renderDashboardIcon,
+        }}
+      />
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrdersListScreen}
+        options={{
+          tabBarLabel: 'Sales Orders',
+          tabBarIcon: renderOrdersIcon,
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: renderProfileIcon,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export const AppNavigator = () => {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isAuthenticated ? (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        ) : (
+          <>
+            <Stack.Screen name="MainTabs" component={TabNavigator} />
+            <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};

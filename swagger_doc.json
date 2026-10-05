@@ -1,0 +1,315 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "summary": "Vendor Login via Odoo Credentials or Vendor Email",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VendorLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful, returns JWT token"
+          },
+          "401": {
+            "description": "Invalid vendor credentials"
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "summary": "Get Logged-in Vendor Profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Vendor company profile details"
+          }
+        },
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/orders/dashboard/stats": {
+      "get": {
+        "operationId": "OrdersController_getDashboardStats",
+        "summary": "Get Vendor Dashboard KPIs & Analytics",
+        "description": "Returns total orders, revenue, pending dispatches, and recent orders for the vendor overview.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Dashboard stats returned successfully"
+          }
+        },
+        "tags": [
+          "Vendor Sales Orders"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      }
+    },
+    "/api/orders": {
+      "get": {
+        "operationId": "OrdersController_getOrders",
+        "summary": "List Sales Orders",
+        "description": "Fetches Sales Orders (corresponding to Odoo Purchase Orders) assigned to this vendor with filtering.",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ALL",
+                "CONFIRMED",
+                "PENDING",
+                "COMPLETED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Filter by SO/PO number",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sales orders"
+          }
+        },
+        "tags": [
+          "Vendor Sales Orders"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "operationId": "OrdersController_getOrderById",
+        "summary": "Get Sales Order Details",
+        "description": "Retrieves complete Sales Order details including item lines, quantities, prices, taxes, and shipping destination.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Odoo Purchase/Sales Order ID",
+            "schema": {
+              "example": 1910,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed sales order with line items"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        },
+        "tags": [
+          "Vendor Sales Orders"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      }
+    },
+    "/api/orders/{id}/acknowledge": {
+      "post": {
+        "operationId": "OrdersController_acknowledgeOrder",
+        "summary": "Acknowledge / Accept Order",
+        "description": "Vendor confirms acceptance of the order. Immediately logs an official acknowledgment entry in Odoo Chatter.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Order ID to acknowledge",
+            "schema": {
+              "example": 1910,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order acknowledged successfully"
+          }
+        },
+        "tags": [
+          "Vendor Sales Orders"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      }
+    },
+    "/api/orders/{id}/dispatch": {
+      "post": {
+        "operationId": "OrdersController_updateDispatch",
+        "summary": "Submit Dispatch / LR Tracking Details",
+        "description": "Vendor submits shipping details (Transporter, LR/Bilty Number, Vehicle Number, Date). Automatically notifies the buyer and logs tracking info into Odoo chatter.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Order ID to dispatch",
+            "schema": {
+              "example": 1910,
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dispatch details recorded and buyer notified"
+          }
+        },
+        "tags": [
+          "Vendor Sales Orders"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Vendor Portal Gateway API",
+    "description": "Standalone RESTful API gateway connecting the Vendor Mobile Application to Odoo ERP. Transforms Purchase Orders into Vendor Sales Orders seamlessly with real-time tracking, dispatch updates, and acknowledgment.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "JWT-auth": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "name": "JWT",
+        "description": "Enter your JWT token (obtained from /api/auth/login)",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "VendorLoginDto": {
+        "type": "object",
+        "properties": {
+          "login": {
+            "type": "string",
+            "example": "vendor@example.com",
+            "description": "Registered Vendor Email or Phone number"
+          },
+          "password": {
+            "type": "string",
+            "example": "vendor123",
+            "description": "Vendor password"
+          }
+        },
+        "required": [
+          "login",
+          "password"
+        ]
+      },
+      "DispatchOrderDto": {
+        "type": "object",
+        "properties": {
+          "transporterName": {
+            "type": "string",
+            "example": "VRL Logistics Pvt Ltd",
+            "description": "Transporter / Courier Company Name"
+          },
+          "lrNumber": {
+            "type": "string",
+            "example": "VRL-BLR-984721",
+            "description": "Lorry Receipt (LR) / Tracking / Bilty Number"
+          },
+          "vehicleNumber": {
+            "type": "string",
+            "example": "MH-12-PQ-4589",
+            "description": "Vehicle / Truck Registration Number"
+          },
+          "numberOfBoxes": {
+            "type": "number",
+            "example": 4,
+            "description": "Number of boxes / packages shipped"
+          },
+          "dispatchDate": {
+            "type": "string",
+            "example": "2026-10-06",
+            "description": "Date of dispatch from vendor factory"
+          },
+          "estimatedDeliveryDate": {
+            "type": "string",
+            "example": "2026-10-08",
+            "description": "Estimated Delivery Date at Customer plant"
+          },
+          "remarks": {
+            "type": "string",
+            "example": "Driver Contact: +91 9876543210. Fragile cargo handled with care.",
+            "description": "Dispatch remarks / notes"
+          }
+        },
+        "required": [
+          "transporterName",
+          "lrNumber",
+          "dispatchDate"
+        ]
+      }
+    }
+  }
+}
