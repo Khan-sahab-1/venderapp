@@ -121,3 +121,4 @@ one line to `INVENTORY_MENU` - the list, form, search, and validation all come f
 - `npx react-native bundle --platform android --dev false ...` -> **bundles successfully**,
   confirming every import/require in the app resolves and the whole JS graph is valid.
 # venderapp
+# venderapp
