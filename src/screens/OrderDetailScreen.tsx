@@ -9,12 +9,14 @@ import {
   Alert,
 } from 'react-native';
 import { apiService } from '../services/api';
-import { SalesOrderDetail, DispatchPayload } from '../types';
+import { SalesOrderDetail, DispatchPayload, CreateBillPayload } from '../types';
 import { Header } from '../components/Header';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
 import { DispatchModal } from '../components/DispatchModal';
+import { CreateBillModal } from '../components/CreateBillModal';
+import { OrderFulfillmentWorkflow } from '../components/OrderFulfillmentWorkflow';
 import { colors } from '../theme/colors';
 
 interface OrderDetailScreenProps {
@@ -28,6 +30,7 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({ navigation
   const [loading, setLoading] = useState(true);
   const [acknowledging, setAcknowledging] = useState(false);
   const [dispatchModalVisible, setDispatchModalVisible] = useState(false);
+  const [billModalVisible, setBillModalVisible] = useState(false);
   const [isAcknowledged, setIsAcknowledged] = useState(false);
 
   const fetchOrderDetail = useCallback(async () => {
@@ -54,9 +57,12 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({ navigation
     try {
       const res = await apiService.acknowledgeOrder(orderId);
       setIsAcknowledged(true);
+      if (order) {
+        setOrder({ ...order, status: 'CONFIRMED', isAcknowledged: true });
+      }
       Alert.alert(
-        'Order Acknowledged',
-        res.message || 'Your acknowledgment has been logged into Odoo ERP and the buyer has been notified.',
+        'Order Acknowledged & Accepted!',
+        res.message || 'Your acceptance has been logged in Odoo ERP PO Chatter. Step 3 (Bill Generation) is now unlocked.',
       );
       await fetchOrderDetail();
     } catch (err: any) {
@@ -64,6 +70,23 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({ navigation
     } finally {
       setAcknowledging(false);
     }
+  };
+
+  const handleBillSubmit = async (payload: CreateBillPayload) => {
+    const res = await apiService.createBill(orderId, payload);
+    if (order) {
+      setOrder({
+        ...order,
+        isBilled: true,
+        invoiceCount: (order.invoiceCount || 0) + 1,
+      });
+    }
+    Alert.alert(
+      'Vendor Bill Created in Odoo!',
+      `Draft Vendor Bill (${payload.vendorBillNumber}) successfully created in Odoo ERP (ID: ${res.invoiceId || res.billId}). The accounts team can now review it.`,
+    );
+    setBillModalVisible(false);
+    await fetchOrderDetail();
   };
 
   const handleDispatchSubmit = async (payload: DispatchPayload) => {
@@ -102,6 +125,12 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({ navigation
       maximumFractionDigits: 2,
     }).format(amount);
 
+  const isAccepted =
+    isAcknowledged ||
+    order.status === 'CONFIRMED' ||
+    order.status === 'DISPATCHED' ||
+    order.status === 'COMPLETED';
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header
@@ -130,93 +159,18 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({ navigation
           </View>
         </View>
 
-        {/* Progress Stepper */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Fulfillment Stepper</Text>
-          <View style={styles.stepperContainer}>
-            <View style={styles.stepItem}>
-              <View style={[styles.stepCircle, styles.stepCompleted]}>
-                <Icon name="check-circle" size={14} color={colors.textWhite} />
-              </View>
-              <Text style={styles.stepText}>Approved</Text>
-            </View>
-            <View style={[styles.stepLine, styles.stepLineActive]} />
-
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  isAcknowledged || order.status === 'CONFIRMED' || order.status === 'DISPATCHED' || order.status === 'COMPLETED'
-                    ? styles.stepCompleted
-                    : styles.stepPending,
-                ]}
-              >
-                <Icon
-                  name="check-circle"
-                  size={14}
-                  color={
-                    isAcknowledged || order.status !== 'PENDING_APPROVAL'
-                      ? colors.textWhite
-                      : colors.textMuted
-                  }
-                />
-              </View>
-              <Text style={styles.stepText}>Acknowledged</Text>
-            </View>
-            <View
-              style={[
-                styles.stepLine,
-                order.status === 'DISPATCHED' || order.status === 'COMPLETED'
-                  ? styles.stepLineActive
-                  : null,
-              ]}
-            />
-
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  order.status === 'DISPATCHED' || order.status === 'COMPLETED'
-                    ? styles.stepCompleted
-                    : styles.stepPending,
-                ]}
-              >
-                <Icon
-                  name="truck"
-                  size={14}
-                  color={
-                    order.status === 'DISPATCHED' || order.status === 'COMPLETED'
-                      ? colors.textWhite
-                      : colors.textMuted
-                  }
-                />
-              </View>
-              <Text style={styles.stepText}>Dispatched</Text>
-            </View>
-            <View
-              style={[
-                styles.stepLine,
-                order.status === 'COMPLETED' ? styles.stepLineActive : null,
-              ]}
-            />
-
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  order.status === 'COMPLETED' ? styles.stepCompleted : styles.stepPending,
-                ]}
-              >
-                <Icon
-                  name="package"
-                  size={14}
-                  color={order.status === 'COMPLETED' ? colors.textWhite : colors.textMuted}
-                />
-              </View>
-              <Text style={styles.stepText}>Delivered</Text>
-            </View>
-          </View>
-        </View>
+        {/* 3-Step Guided Fulfillment Pipeline */}
+        <OrderFulfillmentWorkflow
+          poNumber={order.poNumber}
+          orderTotal={order.amountTotal}
+          itemCount={order.lines?.length || 0}
+          isAccepted={isAccepted}
+          accepting={acknowledging}
+          onAccept={handleAcknowledge}
+          isBilled={!!order.isBilled}
+          invoiceCount={order.invoiceCount || 0}
+          onOpenBillModal={() => setBillModalVisible(true)}
+        />
 
         {/* Customer & Delivery Destination Card */}
         <View style={styles.card}>
@@ -254,29 +208,6 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({ navigation
           ) : null}
         </View>
 
-        {/* Action Buttons: Acknowledge & Dispatch */}
-        <View style={styles.actionContainer}>
-          <Button
-            title={isAcknowledged ? 'Order Acknowledged ✓' : 'Acknowledge Order'}
-            variant={isAcknowledged ? 'secondary' : 'success'}
-            size="md"
-            loading={acknowledging}
-            disabled={isAcknowledged}
-            iconName="check-circle"
-            onPress={handleAcknowledge}
-            style={styles.btnAcknowledge}
-          />
-
-          <Button
-            title="Update Dispatch / LR"
-            variant="primary"
-            size="md"
-            iconName="truck"
-            onPress={() => setDispatchModalVisible(true)}
-            style={styles.btnDispatch}
-          />
-        </View>
-
         {/* Items Line Table */}
         <View style={styles.card}>
           <View style={styles.itemsHeader}>
@@ -299,57 +230,100 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({ navigation
                     </Text>
                   ) : null}
 
-                  <View style={styles.itemMeta}>
-                    <Text style={styles.itemQty}>
-                      Qty: <Text style={styles.boldText}>{item.quantityOrdered} {item.uom || 'Unit(s)'}</Text>
-                    </Text>
-                    <Text style={styles.itemPrice}>
-                      Rate: {formatCurrency(item.unitPrice)}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.itemTotal}>
-                  <Text style={styles.itemTotalAmount}>{formatCurrency(item.priceTotal || item.subtotal)}</Text>
+                <View style={styles.itemMeta}>
+                  <Text style={styles.itemQty}>
+                    Qty: <Text style={styles.boldText}>{item.quantityOrdered} {item.uom || 'Unit(s)'}</Text>
+                  </Text>
+                  <Text style={styles.itemPrice}>
+                    Rate: {formatCurrency(item.unitPrice)}
+                  </Text>
                 </View>
               </View>
-            ))
-          ) : (
-            <Text style={styles.emptyLinesText}>No line items detailed in this purchase order.</Text>
-          )}
+
+              <View style={styles.itemTotal}>
+                <Text style={styles.itemTotalAmount}>{formatCurrency(item.priceTotal || item.subtotal)}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyLinesText}>No line items detailed in this purchase order.</Text>
+        )}
+      </View>
+
+      {/* Financial Summary Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Order Financial Summary</Text>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Subtotal (Untaxed)</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(order.amountUntaxed)}</Text>
         </View>
 
-        {/* Financial Summary Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order Financial Summary</Text>
-
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal (Untaxed)</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(order.amountUntaxed)}</Text>
-          </View>
-
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>GST / Estimated Taxes</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(order.amountTax)}</Text>
-          </View>
-
-          <View style={styles.summaryDivider} />
-
-          <View style={styles.summaryTotalRow}>
-            <Text style={styles.summaryTotalLabel}>Grand Total Amount</Text>
-            <Text style={styles.summaryTotalValue}>{formatCurrency(order.amountTotal)}</Text>
-          </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>GST / Estimated Taxes</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(order.amountTax)}</Text>
         </View>
-      </ScrollView>
 
-      {/* Dispatch Tracking Modal */}
-      <DispatchModal
-        visible={dispatchModalVisible}
-        orderNumber={order.soNumber}
-        onClose={() => setDispatchModalVisible(false)}
-        onSubmit={handleDispatchSubmit}
-      />
-    </SafeAreaView>
+        <View style={styles.summaryDivider} />
+
+        <View style={styles.summaryTotalRow}>
+          <Text style={styles.summaryTotalLabel}>Grand Total Amount</Text>
+          <Text style={styles.summaryTotalValue}>{formatCurrency(order.amountTotal)}</Text>
+        </View>
+      </View>
+
+      {/* Dispatch Action Card (Available once order is accepted) */}
+      {isAccepted && (
+        <View style={styles.dispatchCard}>
+          <View style={styles.dispatchHeader}>
+            <View style={styles.dispatchIconWrap}>
+              <Icon
+                name="truck"
+                size={18}
+                color={order.status === 'DISPATCHED' ? colors.confirmed : colors.primary}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.dispatchTitle}>
+                {order.status === 'DISPATCHED' ? 'Consignment Dispatched' : 'Log Dispatch & Tracking (LR)'}
+              </Text>
+              <Text style={styles.dispatchSubtitle}>
+                {order.status === 'DISPATCHED'
+                  ? 'Transporter & LR details posted to Odoo Chatter'
+                  : 'Record LR number & transporter details once goods are shipped'}
+              </Text>
+            </View>
+          </View>
+          <Button
+            title={order.status === 'DISPATCHED' ? 'Update LR / Transporter' : 'Record Dispatch Details'}
+            variant="outline"
+            size="md"
+            iconName="truck"
+            onPress={() => setDispatchModalVisible(true)}
+            style={{ marginTop: 12 }}
+          />
+        </View>
+      )}
+    </ScrollView>
+
+    {/* Dispatch Tracking Modal */}
+    <DispatchModal
+      visible={dispatchModalVisible}
+      orderNumber={order.soNumber}
+      onClose={() => setDispatchModalVisible(false)}
+      onSubmit={handleDispatchSubmit}
+    />
+
+    {/* Create Bill Modal */}
+    <CreateBillModal
+      visible={billModalVisible}
+      orderNumber={order.soNumber}
+      customerName={order.customerName}
+      totalAmount={order.amountTotal}
+      onClose={() => setBillModalVisible(false)}
+      onSubmit={handleBillSubmit}
+    />
+  </SafeAreaView>
   );
 };
 
@@ -619,5 +593,40 @@ const styles = StyleSheet.create({
   btnDispatch: {
     flex: 1.2,
     marginLeft: 8,
+  },
+  dispatchCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  dispatchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dispatchIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dispatchTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  dispatchSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 });

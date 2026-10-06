@@ -28,7 +28,25 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
           <Text style={styles.soNumber}>{order.soNumber}</Text>
           <Text style={styles.poSubtext}>PO Ref: {order.poNumber}</Text>
         </View>
-        <StatusBadge status={order.status} size="sm" />
+        <View style={styles.badgeRow}>
+          {order.isBilled ? (
+            <View style={styles.billedBadge}>
+              <Icon name="file-text" size={10} color={colors.confirmed} />
+              <Text style={styles.billedBadgeText}>BILLED</Text>
+            </View>
+          ) : order.status === 'CONFIRMED' ? (
+            <View style={styles.readyBillBadge}>
+              <Icon name="file-text" size={10} color={colors.primary} />
+              <Text style={styles.readyBillBadgeText}>READY TO BILL</Text>
+            </View>
+          ) : (
+            <View style={styles.acceptPendingBadge}>
+              <Icon name="alert-circle" size={10} color="#B45309" />
+              <Text style={styles.acceptPendingBadgeText}>ACCEPT ORDER</Text>
+            </View>
+          )}
+          <StatusBadge status={order.status} size="sm" />
+        </View>
       </View>
 
       <View style={styles.customerRow}>
@@ -86,6 +104,58 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  billedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  billedBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.confirmed,
+    marginLeft: 3,
+    letterSpacing: 0.3,
+  },
+  readyBillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryMuted,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  readyBillBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.primary,
+    marginLeft: 3,
+    letterSpacing: 0.3,
+  },
+  acceptPendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  acceptPendingBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#B45309',
+    marginLeft: 3,
+    letterSpacing: 0.3,
   },
   soNumberBlock: {
     flex: 1,

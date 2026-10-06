@@ -6,6 +6,8 @@ import {
   SalesOrderDetail,
   DashboardStats,
   DispatchPayload,
+  CreateBillPayload,
+  CreateBillResponse,
 } from '../types';
 
 // Live Swagger API Gateway URL provided by user
@@ -221,6 +223,25 @@ class ApiService {
         error.response?.data?.message ||
         error.message ||
         'Failed to submit dispatch details';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Create / Submit Vendor Bill against confirmed PO - POST /api/orders/{id}/create-bill
+   */
+  async createBill(
+    orderId: number,
+    payload: CreateBillPayload,
+  ): Promise<CreateBillResponse> {
+    try {
+      const response = await this.client.post(`/orders/${orderId}/create-bill`, payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to generate vendor bill in Odoo';
       throw new Error(serverMsg);
     }
   }

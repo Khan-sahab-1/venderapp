@@ -39,6 +39,8 @@ export interface SalesOrder {
   rawState: string;
   linesCount: number;
   notes: string;
+  isBilled?: boolean;
+  invoiceCount?: number;
 }
 
 export interface SalesOrderDetail extends SalesOrder {
@@ -56,6 +58,24 @@ export interface DispatchPayload {
   dispatchDate: string;
   estimatedDeliveryDate?: string;
   remarks?: string;
+}
+
+export interface CreateBillPayload {
+  vendorBillNumber: string;
+  billDate: string;
+  dueDate?: string;
+  remarks?: string;
+}
+
+export interface CreateBillResponse {
+  success: boolean;
+  billId?: number;
+  invoiceId?: number;
+  billNumber: string;
+  orderId: number;
+  amountTotal: number;
+  status: string;
+  message: string;
 }
 
 export interface DashboardStats {

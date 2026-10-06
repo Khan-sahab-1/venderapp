@@ -14,6 +14,7 @@ import { apiService } from '../services/api';
 import { DashboardStats } from '../types';
 import { MetricCard } from '../components/MetricCard';
 import { OrderCard } from '../components/OrderCard';
+import { OrderNotificationBanner } from '../components/OrderNotificationBanner';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme/colors';
 
@@ -27,6 +28,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [dismissedBanner, setDismissedBanner] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -57,6 +59,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         maximumFractionDigits: 0,
       }).format(stats.totalRevenue)
     : '₹ 0';
+
+  const latestOrder = stats?.recentOrders?.[0];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -92,6 +96,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
             Connected Live to Swagger Gateway (192.168.1.6:4000)
           </Text>
         </View>
+
+        {/* Real-time Order Arrival Push Notification Banner */}
+        {latestOrder && !dismissedBanner ? (
+          <OrderNotificationBanner
+            orderNumber={latestOrder.soNumber}
+            poNumber={latestOrder.poNumber}
+            customerName={latestOrder.customerName}
+            amount={latestOrder.amountTotal}
+            onPress={() => navigation.navigate('OrderDetail', { orderId: latestOrder.id })}
+            onDismiss={() => setDismissedBanner(true)}
+          />
+        ) : null}
 
         {/* Error Alert */}
         {error ? (

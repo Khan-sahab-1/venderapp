@@ -20,7 +20,10 @@ export interface IconProps {
     | 'refresh'
     | 'dollar'
     | 'phone'
-    | 'filter';
+    | 'filter'
+    | 'bell'
+    | 'alert-circle'
+    | 'lock';
   size?: number;
   color?: string;
 }
@@ -153,6 +156,28 @@ export const Icon: React.FC<IconProps> = ({ name, size = 20, color = '#475569' }
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <Polyline points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </Svg>
+      );
+    case 'bell':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </Svg>
+      );
+    case 'alert-circle':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <Circle cx="12" cy="12" r="10" />
+          <Polyline points="12 8 12 12" />
+          <Polyline points="12 16 12.01 16" />
+        </Svg>
+      );
+    case 'lock':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <Rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <Path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </Svg>
       );
     default:
