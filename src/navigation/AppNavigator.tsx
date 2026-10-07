@@ -8,6 +8,11 @@ import { DashboardScreen } from '../screens/DashboardScreen';
 import { OrdersListScreen } from '../screens/OrdersListScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
 import { InventoryScreen } from '../screens/InventoryScreen';
+import { ProductMasterScreen } from '../screens/ProductMasterScreen';
+import { UomMasterScreen } from '../screens/UomMasterScreen';
+import { CategoryMasterScreen } from '../screens/CategoryMasterScreen';
+import { WarehouseMasterScreen } from '../screens/WarehouseMasterScreen';
+import { StockLedgerScreen } from '../screens/StockLedgerScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme/colors';
@@ -99,6 +104,11 @@ export const AppNavigator = () => {
           <>
             <Stack.Screen name="MainTabs" component={TabNavigator} />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+            <Stack.Screen name="ProductMaster" component={ProductMasterScreen} />
+            <Stack.Screen name="UomMaster" component={UomMasterScreen} />
+            <Stack.Screen name="CategoryMaster" component={CategoryMasterScreen} />
+            <Stack.Screen name="WarehouseMaster" component={WarehouseMasterScreen} />
+            <Stack.Screen name="StockLedger" component={StockLedgerScreen} />
           </>
         )}
       </Stack.Navigator>
