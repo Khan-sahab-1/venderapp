@@ -15,6 +15,14 @@ import {
   InventorySummary,
   CreateProductPayload,
   StockInwardPayload,
+  StockOutwardPayload,
+  CreateUomCategoryPayload,
+  CreateUomPayload,
+  CreateProductCategoryPayload,
+  WarehouseItem,
+  CreateWarehousePayload,
+  StockQuantItem,
+  StockMoveItem,
 } from '../types';
 
 // Live Swagger API Gateway URL provided by user
@@ -345,6 +353,112 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       const serverMsg = error.response?.data?.message || error.message || 'Failed to record stock inward';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Create UOM Category
+   */
+  async createUomCategory(payload: CreateUomCategoryPayload): Promise<UomCategoryItem> {
+    try {
+      const response = await this.client.post('/inventory/uom-categories', payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to create UOM category';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Create UOM
+   */
+  async createUom(payload: CreateUomPayload): Promise<UomItem> {
+    try {
+      const response = await this.client.post('/inventory/uoms', payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to create UOM';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Create Product Category
+   */
+  async createProductCategory(payload: CreateProductCategoryPayload): Promise<ProductCategoryItem> {
+    try {
+      const response = await this.client.post('/inventory/categories', payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to create product category';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get Warehouses / Godowns
+   */
+  async getWarehouses(): Promise<WarehouseItem[]> {
+    try {
+      const response = await this.client.get('/inventory/warehouses');
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch warehouses';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Create Warehouse / Godown
+   */
+  async createWarehouse(payload: CreateWarehousePayload): Promise<WarehouseItem> {
+    try {
+      const response = await this.client.post('/inventory/warehouses', payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to create warehouse';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get Live Stock Ledger
+   */
+  async getStockLedger(): Promise<StockQuantItem[]> {
+    try {
+      const response = await this.client.get('/inventory/stock');
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch stock ledger';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get Stock Moves Audit Log
+   */
+  async getStockMoves(productId?: number): Promise<StockMoveItem[]> {
+    try {
+      const params: any = {};
+      if (productId) params.productId = productId;
+      const response = await this.client.get('/inventory/stock/moves', { params });
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch stock moves';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Deduct Stock Outward (Issue / Dispatch)
+   */
+  async stockOutward(payload: StockOutwardPayload): Promise<any> {
+    try {
+      const response = await this.client.post('/inventory/stock/outward', payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to record stock outward';
       throw new Error(serverMsg);
     }
   }

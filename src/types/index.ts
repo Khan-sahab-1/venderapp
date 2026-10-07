@@ -157,9 +157,88 @@ export interface CreateProductPayload {
 
 export interface StockInwardPayload {
   productId: number;
+  warehouseId?: number;
   qty: number;
   referenceNo?: string;
   partyName?: string;
   remarks?: string;
+}
+
+export interface StockOutwardPayload {
+  productId: number;
+  warehouseId?: number;
+  qty: number;
+  referenceNo?: string;
+  partyName?: string;
+  remarks?: string;
+}
+
+export interface CreateUomCategoryPayload {
+  name: string;
+  description?: string;
+}
+
+export interface CreateUomPayload {
+  categoryId: number;
+  name: string;
+  symbol: string;
+  ratio?: number;
+  isBaseUnit?: boolean;
+}
+
+export interface CreateProductCategoryPayload {
+  name: string;
+  code?: string;
+  description?: string;
+}
+
+export interface WarehouseItem {
+  id: number;
+  vendorId: number;
+  name: string;
+  code: string;
+  address?: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface CreateWarehousePayload {
+  name: string;
+  code: string;
+  address?: string;
+  isDefault?: boolean;
+}
+
+export interface StockQuantItem {
+  id: string;
+  vendorId: number;
+  productId: number;
+  productName: string;
+  sku: string;
+  warehouseId: number;
+  warehouseName: string;
+  uomSymbol: string;
+  qtyOnHand: number;
+  qtyReserved: number;
+  qtyAvailable: number;
+  updatedAt: string;
+}
+
+export interface StockMoveItem {
+  id: number;
+  vendorId: number;
+  moveNumber: string;
+  type: 'INWARD' | 'OUTWARD';
+  productId: number;
+  productName: string;
+  sku: string;
+  warehouseId: number;
+  warehouseName: string;
+  qty: number;
+  uomSymbol: string;
+  referenceNo?: string;
+  partyName?: string;
+  remarks?: string;
+  createdAt: string;
 }
 
