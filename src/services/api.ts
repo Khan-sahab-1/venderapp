@@ -8,6 +8,13 @@ import {
   DispatchPayload,
   CreateBillPayload,
   CreateBillResponse,
+  InventoryProduct,
+  UomCategoryItem,
+  UomItem,
+  ProductCategoryItem,
+  InventorySummary,
+  CreateProductPayload,
+  StockInwardPayload,
 } from '../types';
 
 // Live Swagger API Gateway URL provided by user
@@ -242,6 +249,102 @@ class ApiService {
         error.response?.data?.message ||
         error.message ||
         'Failed to generate vendor bill in Odoo';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get KPI Dashboard Summary
+   */
+  async getInventorySummary(): Promise<InventorySummary> {
+    try {
+      const response = await this.client.get('/inventory/summary');
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch inventory summary';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get Products with Live Stock
+   */
+  async getInventoryProducts(search?: string, categoryId?: number): Promise<InventoryProduct[]> {
+    try {
+      const params: any = {};
+      if (search) params.search = search;
+      if (categoryId) params.categoryId = categoryId;
+      const response = await this.client.get('/inventory/products', { params });
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch products';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Create Product
+   */
+  async createInventoryProduct(payload: CreateProductPayload): Promise<InventoryProduct> {
+    try {
+      const response = await this.client.post('/inventory/products', payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to create product';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get UOM Categories
+   */
+  async getUomCategories(): Promise<UomCategoryItem[]> {
+    try {
+      const response = await this.client.get('/inventory/uom-categories');
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch UOM categories';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get UOMs
+   */
+  async getUoms(categoryId?: number): Promise<UomItem[]> {
+    try {
+      const params: any = {};
+      if (categoryId) params.categoryId = categoryId;
+      const response = await this.client.get('/inventory/uoms', { params });
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch UOMs';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Get Product Categories
+   */
+  async getProductCategories(): Promise<ProductCategoryItem[]> {
+    try {
+      const response = await this.client.get('/inventory/categories');
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to fetch categories';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Standalone Inventory: Add Stock Inward (GRN)
+   */
+  async stockInward(payload: StockInwardPayload): Promise<any> {
+    try {
+      const response = await this.client.post('/inventory/stock/inward', payload);
+      return response.data;
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message || error.message || 'Failed to record stock inward';
       throw new Error(serverMsg);
     }
   }

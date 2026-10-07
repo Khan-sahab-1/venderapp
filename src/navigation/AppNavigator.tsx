@@ -7,6 +7,7 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { OrdersListScreen } from '../screens/OrdersListScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
+import { InventoryScreen } from '../screens/InventoryScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme/colors';
@@ -20,6 +21,10 @@ const renderDashboardIcon = ({ color }: { color: string }) => (
 
 const renderOrdersIcon = ({ color }: { color: string }) => (
   <Icon name="package" size={20} color={color} />
+);
+
+const renderInventoryIcon = ({ color }: { color: string }) => (
+  <Icon name="truck" size={20} color={color} />
 );
 
 const renderProfileIcon = ({ color }: { color: string }) => (
@@ -60,6 +65,14 @@ const TabNavigator = () => {
         options={{
           tabBarLabel: 'Sales Orders',
           tabBarIcon: renderOrdersIcon,
+        }}
+      />
+      <Tab.Screen
+        name="InventoryTab"
+        component={InventoryScreen}
+        options={{
+          tabBarLabel: 'Inventory',
+          tabBarIcon: renderInventoryIcon,
         }}
       />
       <Tab.Screen

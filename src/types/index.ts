@@ -87,3 +87,79 @@ export interface DashboardStats {
   pendingRevenue: number;
   recentOrders: SalesOrder[];
 }
+
+// ================= STANDALONE VENDOR INVENTORY =================
+export interface InventoryProduct {
+  id: number;
+  sku: string;
+  name: string;
+  description?: string;
+  categoryId: number;
+  categoryName: string;
+  uomId: number;
+  uomSymbol: string;
+  hsnCode: string;
+  taxRate: number;
+  costPrice: number;
+  salePrice: number;
+  minStockAlert: number;
+  stockOnHand: number;
+  stockStatus: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+}
+
+export interface UomCategoryItem {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+export interface UomItem {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  name: string;
+  symbol: string;
+  ratio: number;
+  isBaseUnit: boolean;
+}
+
+export interface ProductCategoryItem {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+}
+
+export interface InventorySummary {
+  totalProducts: number;
+  totalStockUnits: number;
+  inventoryValuation: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+  totalWarehouses: number;
+  totalInvoicesCreated: number;
+  lowStockProducts: InventoryProduct[];
+}
+
+export interface CreateProductPayload {
+  sku: string;
+  name: string;
+  description?: string;
+  categoryId: number;
+  uomId: number;
+  hsnCode: string;
+  taxRate: number;
+  costPrice: number;
+  salePrice: number;
+  minStockAlert?: number;
+  initialStock?: number;
+}
+
+export interface StockInwardPayload {
+  productId: number;
+  qty: number;
+  referenceNo?: string;
+  partyName?: string;
+  remarks?: string;
+}
+
