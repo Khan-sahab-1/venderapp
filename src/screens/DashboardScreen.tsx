@@ -23,7 +23,7 @@ interface DashboardScreenProps {
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
-  const { user, refreshProfile } = useAuth();
+  const { user, company, refreshProfile } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [invSummary, setInvSummary] = useState<InventorySummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,13 +76,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         {/* Top Vendor Greeting Bar */}
         <View style={styles.topBar}>
           <View style={styles.vendorGreetingTextWrap}>
-            <Text style={styles.welcomeSubtitle}>Welcome back,</Text>
+            <Text style={styles.welcomeSubtitle}>Tenant ERP Workspace</Text>
             <Text style={styles.vendorName} numberOfLines={1}>
-              {user?.name || 'Vendor Partner'}
+              {company?.name || user?.companyName || user?.name || 'Tenant Company'}
             </Text>
-            {user?.gstin ? (
-              <Text style={styles.gstinText}>GSTIN: {user.gstin}</Text>
-            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                User: {user?.email} • Role: {user?.role || 'admin'}
+              </Text>
+            </View>
           </View>
           <TouchableOpacity
             style={styles.refreshBtn}
@@ -97,7 +99,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         <View style={styles.syncBanner}>
           <View style={styles.liveDot} />
           <Text style={styles.syncText}>
-            Dual Mode: Odoo PO/SO Gateway & Private Dynamic Inventory DB
+            Tenant Isolated • Odoo Partner #{company?.odooPartnerId || 'Synced'}
           </Text>
         </View>
 

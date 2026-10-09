@@ -2,6 +2,8 @@ import axios, { AxiosInstance } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   VendorUser,
+  User,
+  Company,
   SalesOrder,
   SalesOrderDetail,
   DashboardStats,
@@ -101,26 +103,29 @@ class ApiService {
   }
 
   /**
-   * Vendor Login - POST /api/auth/login
+   * Vendor / Company Login - POST /api/auth/login
    */
-  async login(loginText: string, passwordText: string): Promise<{ token: string; vendor: VendorUser }> {
+  async login(emailText: string, passwordText: string): Promise<{ token: string; user: User }> {
     try {
       const response = await this.client.post('/auth/login', {
-        login: loginText,
+        email: emailText.trim(),
         password: passwordText,
       });
 
-      const { token, vendor } = response.data;
+      const resData = response.data?.data || response.data;
+      const token = resData.accessToken || resData.token;
+      const user = resData.user || resData.vendor;
+
       if (!token) {
         throw new Error('No authentication token returned by server');
       }
 
       this.setToken(token);
-      if (vendor) {
-        await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(vendor));
+      if (user) {
+        await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
       }
 
-      return { token, vendor };
+      return { token, user };
     } catch (error: any) {
       const serverMsg =
         error.response?.data?.message ||
@@ -132,19 +137,89 @@ class ApiService {
   }
 
   /**
-   * Get Logged-in Vendor Profile - GET /api/auth/profile
+   * Change Password - POST /api/auth/change-password
    */
-  async getProfile(): Promise<VendorUser> {
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
     try {
-      const response = await this.client.get('/auth/profile');
-      const profile = response.data;
-      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(profile));
-      return profile;
+      const response = await this.client.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+      const resData = response.data?.data || response.data;
+      return resData;
+    } catch (error: any) {
+      const serverMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Password change failed';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Get Logged-in User Profile - GET /api/auth/me
+   */
+  async getProfile(): Promise<User> {
+    try {
+      const response = await this.client.get('/auth/me');
+      const user = response.data?.data || response.data;
+      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      return user;
     } catch (error: any) {
       const serverMsg =
         error.response?.data?.message ||
         error.message ||
         'Could not fetch profile';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Get Current Tenant Company Profile - GET /api/companies/current
+   */
+  async getCurrentCompany(): Promise<Company> {
+    try {
+      const response = await this.client.get('/companies/current');
+      const company = response.data?.data || response.data;
+      return company;
+    } catch (error: any) {
+      const serverMsg =
+        error.response?.data?.message ||
+        error.message ||
+        'Could not fetch company profile';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Trigger Odoo Vendors Onboarding Sync - POST /api/integrations/odoo/vendors/sync
+   */
+  async syncOdooVendors(): Promise<any> {
+    try {
+      const response = await this.client.post('/integrations/odoo/vendors/sync');
+      return response.data?.data || response.data;
+    } catch (error: any) {
+      const serverMsg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to sync Odoo vendors';
+      throw new Error(serverMsg);
+    }
+  }
+
+  /**
+   * Fetch Odoo Sync Status & Audit Logs - GET /api/integrations/odoo/sync-status
+   */
+  async getOdooSyncStatus(): Promise<any> {
+    try {
+      const response = await this.client.get('/integrations/odoo/sync-status');
+      return response.data?.data || response.data;
+    } catch (error: any) {
+      const serverMsg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to fetch sync status';
       throw new Error(serverMsg);
     }
   }

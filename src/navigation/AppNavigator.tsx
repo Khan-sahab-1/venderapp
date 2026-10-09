@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
+import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { OrdersListScreen } from '../screens/OrdersListScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
@@ -39,6 +40,7 @@ const renderProfileIcon = ({ color }: { color: string }) => (
 const TabNavigator = () => {
   return (
     <Tab.Navigator
+      id="MainTabsNav"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -93,13 +95,15 @@ const TabNavigator = () => {
 };
 
 export const AppNavigator = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, mustChangePassword } = useAuth();
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator id="RootStackNav" screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
           <Stack.Screen name="Login" component={LoginScreen} />
+        ) : mustChangePassword ? (
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={TabNavigator} />
@@ -115,3 +119,4 @@ export const AppNavigator = () => {
     </NavigationContainer>
   );
 };
+

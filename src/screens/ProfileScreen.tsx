@@ -11,14 +11,16 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/api';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme/colors';
 
 export const ProfileScreen: React.FC = () => {
-  const { user, logout, apiBaseUrl, setApiBaseUrl, refreshProfile } = useAuth();
+  const { user, company, logout, apiBaseUrl, setApiBaseUrl, refreshProfile } = useAuth();
   const [editingUrl, setEditingUrl] = useState(apiBaseUrl);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncingOdoo, setSyncingOdoo] = useState(false);
 
   useEffect(() => {
     setEditingUrl(apiBaseUrl);
@@ -40,10 +42,26 @@ export const ProfileScreen: React.FC = () => {
     Alert.alert('Settings Updated', `API Gateway set to: ${cleanUrl}\nPlease pull-to-refresh or sign in again.`);
   };
 
+  const handleSyncOdoo = async () => {
+    setSyncingOdoo(true);
+    try {
+      const res = await apiService.syncOdooVendors();
+      Alert.alert(
+        'Odoo Master Synchronized',
+        `Synced successfully.\nTotal Vendors: ${res?.summary?.totalFetched || 0}\nCreated: ${res?.summary?.created || 0}\nUpdated: ${res?.summary?.updated || 0}`,
+      );
+      await refreshProfile();
+    } catch (err: any) {
+      Alert.alert('Sync Failed', err.message || 'Could not synchronize with Odoo 11');
+    } finally {
+      setSyncingOdoo(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Vendor Profile & Settings</Text>
+        <Text style={styles.headerTitle}>Vendor Profile & Tenant Settings</Text>
       </View>
 
       <ScrollView
@@ -56,24 +74,34 @@ export const ProfileScreen: React.FC = () => {
           <View style={styles.avatar}>
             <Icon name="building" size={28} color={colors.primary} />
           </View>
-          <Text style={styles.vendorName}>{user?.name || 'Vendor Entity'}</Text>
-          <Text style={styles.vendorEmail}>{user?.email || 'vendor@example.com'}</Text>
-          {user?.gstin ? (
-            <View style={styles.gstinBadge}>
-              <Text style={styles.gstinText}>GSTIN: {user.gstin}</Text>
-            </View>
-          ) : null}
+          <Text style={styles.vendorName}>{company?.name || user?.companyName || user?.name}</Text>
+          <Text style={styles.vendorEmail}>{user?.email}</Text>
+          <View style={styles.gstinBadge}>
+            <Text style={styles.gstinText}>
+              Tenant ID: {user?.companyId?.substring(0, 8)}... • Odoo #{company?.odooPartnerId || 'N/A'}
+            </Text>
+          </View>
         </View>
 
         {/* Contact Info Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Registered Contact Info (from Odoo)</Text>
+          <Text style={styles.cardTitle}>Tenant Profile Details (from Odoo Master)</Text>
+
+          <View style={styles.infoRow}>
+            <Icon name="user" size={16} color={colors.textSecondary} />
+            <View style={styles.infoTextBlock}>
+              <Text style={styles.infoLabel}>Admin Account</Text>
+              <Text style={styles.infoValue}>{user?.name} ({user?.role})</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
 
           <View style={styles.infoRow}>
             <Icon name="phone" size={16} color={colors.textSecondary} />
             <View style={styles.infoTextBlock}>
-              <Text style={styles.infoLabel}>Phone Number</Text>
-              <Text style={styles.infoValue}>{user?.phone || 'Not Registered'}</Text>
+              <Text style={styles.infoLabel}>Phone / Mobile</Text>
+              <Text style={styles.infoValue}>{company?.mobile || company?.phone || 'Not Registered'}</Text>
             </View>
           </View>
 
@@ -84,10 +112,28 @@ export const ProfileScreen: React.FC = () => {
             <View style={styles.infoTextBlock}>
               <Text style={styles.infoLabel}>Registered Address</Text>
               <Text style={styles.infoValue}>
-                {user?.address || 'Address not configured in ERP'}
+                {[company?.street, company?.city, company?.state, company?.zip, company?.country]
+                  .filter(Boolean)
+                  .join(', ') || 'Address not configured in Odoo'}
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Odoo Onboarding Integration Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Odoo 11 Vendor Master Onboarding</Text>
+          <Text style={styles.cardSubtitle}>
+            Trigger background XML-RPC synchronization with Odoo ERP master database.
+          </Text>
+          <Button
+            title="Synchronize Odoo Vendors"
+            variant="outline"
+            size="sm"
+            loading={syncingOdoo}
+            onPress={handleSyncOdoo}
+            style={{ marginTop: 8 }}
+          />
         </View>
 
         {/* Connection Settings Card */}

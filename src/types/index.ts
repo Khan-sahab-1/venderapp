@@ -1,9 +1,35 @@
 export type OrderStatus = 'PENDING_APPROVAL' | 'CONFIRMED' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED';
 
-export interface VendorUser {
-  id: number;
+export interface User {
+  id: string;
   name: string;
   email: string;
+  companyId: string;
+  companyName: string;
+  role: string;
+  mustChangePassword: boolean;
+}
+
+export interface Company {
+  id: string;
+  odooPartnerId: number;
+  name: string;
+  email: string;
+  phone?: string;
+  mobile?: string;
+  street?: string;
+  street2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zip?: string;
+  taxId?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorUser extends User {
   phone?: string;
   gstin?: string;
   address?: string;

@@ -1,14 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { VendorUser } from '../types';
+import { User, Company } from '../types';
 import { apiService, DEFAULT_API_URL } from '../services/api';
 
 interface AuthContextType {
-  user: VendorUser | null;
+  user: User | null;
+  company: Company | null;
   isAuthenticated: boolean;
+  mustChangePassword: boolean;
   isLoading: boolean;
   apiBaseUrl: string;
   setApiBaseUrl: (url: string) => void;
-  login: (loginText: string, passwordText: string) => Promise<void>;
+  login: (emailText: string, passwordText: string) => Promise<User>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -16,7 +19,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<VendorUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [apiBaseUrl, setApiBaseUrlState] = useState<string>(DEFAULT_API_URL);
 
@@ -29,25 +33,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (initResult.token) {
         // Token exists, verify with live profile endpoint
         try {
-          const liveProfile = await apiService.getProfile();
+          const [liveProfile, liveCompany] = await Promise.all([
+            apiService.getProfile(),
+            apiService.getCurrentCompany().catch(() => null),
+          ]);
           setUser(liveProfile);
+          setCompany(liveCompany);
           setIsLoading(false);
           return;
         } catch {
-          // Token expired or invalid, fall through to auto-login
+          // Token expired or invalid, clear
+          await apiService.logout();
+          setUser(null);
+          setCompany(null);
         }
-      }
-
-      // Initial start or fresh launch: attempt connection with default credentials
-      try {
-        const res = await apiService.login('admin', 'admin');
-        setUser(res.vendor);
-      } catch {
-        // If auto-login failed, show LoginScreen
-        setUser(null);
       }
     } catch {
       setUser(null);
+      setCompany(null);
     } finally {
       setIsLoading(false);
     }
@@ -62,11 +65,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     apiService.setBaseUrl(url);
   };
 
-  const login = async (loginText: string, passwordText: string) => {
+  const login = async (emailText: string, passwordText: string): Promise<User> => {
     setIsLoading(true);
     try {
-      const res = await apiService.login(loginText, passwordText);
-      setUser(res.vendor);
+      const res = await apiService.login(emailText, passwordText);
+      setUser(res.user);
+
+      // Load company details in background
+      try {
+        const comp = await apiService.getCurrentCompany();
+        setCompany(comp);
+      } catch {
+        // Continue even if company details take a moment
+      }
+
+      return res.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    setIsLoading(true);
+    try {
+      await apiService.changePassword(currentPassword, newPassword);
+      // Update local user state so mustChangePassword becomes false
+      if (user) {
+        const updatedUser = { ...user, mustChangePassword: false };
+        setUser(updatedUser);
+      }
+      // Re-fetch profile to sync with server
+      await refreshProfile();
     } finally {
       setIsLoading(false);
     }
@@ -75,12 +104,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     await apiService.logout();
     setUser(null);
+    setCompany(null);
   };
 
   const refreshProfile = async () => {
     try {
-      const profile = await apiService.getProfile();
-      setUser(profile);
+      const [liveProfile, liveCompany] = await Promise.all([
+        apiService.getProfile(),
+        apiService.getCurrentCompany().catch(() => null),
+      ]);
+      setUser(liveProfile);
+      setCompany(liveCompany);
     } catch {
       // Keep existing profile state
     }
@@ -90,11 +124,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        company,
         isAuthenticated: !!user,
+        mustChangePassword: !!user?.mustChangePassword,
         isLoading,
         apiBaseUrl,
         setApiBaseUrl,
         login,
+        changePassword,
         logout,
         refreshProfile,
       }}
